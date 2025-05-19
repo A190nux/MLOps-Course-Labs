@@ -5,8 +5,6 @@ FastAPI application for bank customer churn prediction.
 import os
 import logging
 import pandas as pd
-import mlflow
-import mlflow.sklearn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
