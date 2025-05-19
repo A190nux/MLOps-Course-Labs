@@ -23,6 +23,8 @@ import mlflow.sklearn
 from mlflow.models.signature import infer_signature
 import os
 from sklearn.svm import SVC
+import pickle
+import joblib
 
 ### Import MLflow
 
@@ -119,6 +121,11 @@ def preprocess(df):
     input_example=input_example,
     pyfunc_predict_fn="transform"
     )
+    
+    # Save the transformer as a pickle file
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(col_transf, "models/transformer.pkl")
+    print("Transformer saved to models/transformer.pkl")
 
     return col_transf, X_train, X_test, y_train, y_test
 
@@ -134,7 +141,7 @@ def train(X_train, y_train):
     Returns:
         LogisticRegression: trained logistic regression model
     """
-    svc = SVC(max_iter=10000)
+    svc = SVC(max_iter=10000, probability=True)  # Added probability=True to enable predict_proba
     svc.fit(X_train, y_train)
 
     ### Log the model with the input and output schema
@@ -144,6 +151,11 @@ def train(X_train, y_train):
     mlflow.sklearn.log_model(svc, "model", signature=signature)
     ### Log the data
     mlflow.log_artifact(os.path.join("dataset", "Churn_Modelling.csv"), "data")
+    
+    # Save the model as a pickle file
+    joblib.dump(svc, "models/model.pkl")
+    print("Model saved to models/model.pkl")
+    
     return svc
 
 
@@ -184,7 +196,7 @@ def main():
         })
 
         ### Log tag
-        mlflow.set_tag("model_type", "logistic_regression")
+        mlflow.set_tag("model_type", "svc")  # Changed to SVC since we're using SVC now
         
         conf_mat = confusion_matrix(y_test, y_pred, labels=model.classes_)
         conf_mat_disp = ConfusionMatrixDisplay(
@@ -195,6 +207,10 @@ def main():
         # Log the image as an artifact in MLflow
         plt.savefig("confusion_matrix.png")
         mlflow.log_artifact("confusion_matrix.png")
+        
+        # Also save the pickled files as MLflow artifacts
+        mlflow.log_artifact("models/model.pkl")
+        mlflow.log_artifact("models/transformer.pkl")
         
         plt.show()
 

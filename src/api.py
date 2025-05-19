@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import uvicorn
 import time
+import joblib
 
 # Configure logging
 logging.basicConfig(
@@ -35,8 +36,12 @@ app = FastAPI(
 # Load the model and transformer
 try:
     logger.info("Loading model and transformer...")
-    model = mlflow.sklearn.load_model("C:/Users/algon/mlruns/0/latest/artifacts/model")
-    transformer = mlflow.sklearn.load_model("C:/Users/algon/mlruns/0/latest/artifacts/model")
+    model_path = "models/model.pkl"
+    transformer_path = "models/transformer.pkl"
+    
+    model = joblib.load(model_path)
+    transformer = joblib.load(transformer_path)
+    
     logger.info("Model and transformer loaded successfully")
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
@@ -137,4 +142,4 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
