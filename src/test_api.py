@@ -8,15 +8,20 @@ import pytest
 from fastapi.testclient import TestClient
 import pandas as pd
 import numpy as np
-import mlflow
-import mlflow.sklearn
 from unittest.mock import patch, MagicMock
 
-# Add the src directory to the path so we can import the app
+# Add the src directory to the path so we can import the api
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-# Import the app
-from app import app, CustomerData
+# Mock the model loading before importing the api
+with patch('joblib.load') as mock_load:
+    # Configure the mock to return a MagicMock object
+    mock_model = MagicMock()
+    mock_transformer = MagicMock()
+    mock_load.side_effect = [mock_model, mock_transformer]
+    
+    # Now import the api with mocked model loading
+    from api import app, CustomerData
 
 client = TestClient(app)
 
@@ -48,8 +53,8 @@ def test_health_endpoint():
     assert "status" in response.json()
     assert response.json()["status"] == "healthy"
 
-@patch('app.model')
-@patch('app.transformer')
+@patch('api.model')
+@patch('api.transformer')
 def test_predict_endpoint(mock_model, mock_transformer):
     """Test the predict endpoint with mocked model and transformer."""
     # Setup mocks
