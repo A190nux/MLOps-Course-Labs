@@ -12,6 +12,8 @@ from typing import Optional
 import uvicorn
 import time
 import joblib
+from .prometheus_middleware import PrometheusMiddleware as prometheus_middleware, metrics_endpoint, PREDICTION_COUNT
+
 
 # Configure logging
 logging.basicConfig(
@@ -85,6 +87,11 @@ async def health():
     logger.info("Health check endpoint accessed")
     return {"status": "healthy", "model_loaded": model is not None, "transformer_loaded": transformer is not None}
 
+@app.get("/metrics", tags=["Monitoring"])
+async def metrics():
+    """Endpoint that exposes Prometheus metrics."""
+    return metrics_endpoint()
+
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
 async def predict(data: CustomerData):
     """
@@ -109,6 +116,9 @@ async def predict(data: CustomerData):
         # Make prediction
         prediction = int(model.predict(transformed_df)[0])
         logger.info(f"Prediction result: {prediction}")
+        
+        # Increment the prediction counter
+        PREDICTION_COUNT.inc()
         
         # Get prediction label
         prediction_label = "Churned" if prediction == 1 else "Not Churned"
